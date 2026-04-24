@@ -1,0 +1,25 @@
+{
+  "policyName": "Care Health Plan",
+  "insurer": "Care",
+  "premium": "18,000",
+  "coverAmount": "5L",
+  "waitingPeriod": "24 months",
+  "keyBenefit": "No co-pay",
+  "claimType": "Cashless / Reimbursement",
+  "coPay": "0%",
+  "inclusions": [
+    "Room rent up to Rs. 10,000 per day",
+    "Pre-hospitalization expenses for 30 days",
+    "Specialist consultation fees"
+  ],
+  "exclusions": [
+    "Cosmetic treatments",
+    "Dental procedures not related to accident",
+    "Experimental therapies"
+  ],
+  "subLimits": [
+    "Organ transplant: Rs. 2,50,000",
+    "Room sharing waiver: Rs. 5,000 per day"
+  ],
+  "text": "Care Health Plan is designed for clients who want strong hospitalization cover with zero co-pay. It offers cashless hospitalization nationwide and covers pre-existing conditions after the waiting period. The plan includes a 24-month waiting period for pre-existing diseases and a 0% co-pay on eligible claims."
+}

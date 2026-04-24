@@ -1,0 +1,25 @@
+{
+  "policyName": "HDFC Ergo Easy",
+  "insurer": "HDFC",
+  "premium": "15,000",
+  "coverAmount": "3L",
+  "waitingPeriod": "12 months",
+  "keyBenefit": "Low premium",
+  "claimType": "Reimbursement",
+  "coPay": "5%",
+  "inclusions": [
+    "Basic hospitalization cover",
+    "Room rent up to Rs. 5,000 per day",
+    "Emergency ambulance charges"
+  ],
+  "exclusions": [
+    "Cosmetic surgeries",
+    "Treatment for pre-existing conditions within first 12 months",
+    "Dental care not related to accident"
+  ],
+  "subLimits": [
+    "Day care procedures: Rs. 25,000",
+    "Psychiatric treatment: Rs. 20,000 per year"
+  ],
+  "text": "HDFC Ergo Easy is the low-premium choice for users with a modest budget. It offers a 12-month waiting period and a 5% co-pay, making it a fit for Tier-2 and Tier-3 city members seeking affordable hospital cover."
+}
