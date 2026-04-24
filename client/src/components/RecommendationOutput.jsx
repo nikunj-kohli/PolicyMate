@@ -11,19 +11,49 @@ function SkeletonRow() {
 }
 
 function RecommendationOutput({ data, loading, error }) {
+  if (data?.reply === 'Error') {
+    return (
+      <div className="rounded-[12px] border-l-4 border-red-500 bg-red-50 p-6 shadow-sm">
+        <h3 className="font-semibold text-red-800">AI Generation Failed</h3>
+        <p className="mt-1 text-sm text-red-700">{data.error}</p>
+        <p className="mt-2 text-sm text-red-600">Please check your API key quota or enable Demo Mode.</p>
+      </div>
+    )
+  }
+
   if (loading) {
     return (
       <div className="space-y-6">
         <div className="rounded-[12px] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--color-shadow)]">
-          <div className="mb-4 h-6 w-52 rounded-full bg-[var(--color-surface-muted)] skeleton"></div>
-          <div className="overflow-hidden rounded-[12px] border border-[var(--color-border)] bg-[var(--color-surface)]">
-            <table className="w-full border-collapse">
-              <tbody>
-                <SkeletonRow />
-                <SkeletonRow />
-                <SkeletonRow />
-              </tbody>
-            </table>
+          <div className="mb-6 flex items-center gap-3">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--color-primary)] border-t-transparent"></div>
+            <div>
+              <div className="h-6 w-52 rounded-full bg-[var(--color-surface-muted)] skeleton animate-pulse"></div>
+              <p className="mt-2 text-sm text-[var(--color-muted)]">AI is analyzing your profile and searching policies...</p>
+            </div>
+          </div>
+          <div className="space-y-4">
+            <div className="rounded-xl bg-[var(--color-background)] p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-4 w-4 rounded-full bg-[var(--color-primary)] animate-pulse"></div>
+                <div className="h-4 w-32 rounded-full bg-[var(--color-surface-muted)] skeleton animate-pulse"></div>
+              </div>
+              <p className="mt-2 text-xs text-[var(--color-muted)] ml-7">Matching policies to your health profile</p>
+            </div>
+            <div className="rounded-xl bg-[var(--color-background)] p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-4 w-4 rounded-full bg-[var(--color-primary)] animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+                <div className="h-4 w-40 rounded-full bg-[var(--color-surface-muted)] skeleton animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+              </div>
+              <p className="mt-2 text-xs text-[var(--color-muted)] ml-7">Analyzing coverage details and benefits</p>
+            </div>
+            <div className="rounded-xl bg-[var(--color-background)] p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-4 w-4 rounded-full bg-[var(--color-primary)] animate-pulse" style={{ animationDelay: '1s' }}></div>
+                <div className="h-4 w-36 rounded-full bg-[var(--color-surface-muted)] skeleton animate-pulse" style={{ animationDelay: '1s' }}></div>
+              </div>
+              <p className="mt-2 text-xs text-[var(--color-muted)] ml-7">Generating personalized recommendation</p>
+            </div>
           </div>
         </div>
       </div>

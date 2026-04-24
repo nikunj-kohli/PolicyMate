@@ -31,6 +31,12 @@ function HomePage() {
   const debounceRef = useRef(null)
 
   useEffect(() => {
+    const savedUser = window.sessionStorage.getItem('policyMateUser')
+    if (!savedUser) {
+      window.location.href = '/login' // simple redirect for this demo
+      return
+    }
+
     const saved = window.sessionStorage.getItem('policyMateProfile')
     if (saved) {
       try {
@@ -81,7 +87,12 @@ function HomePage() {
     }, 3000)
   }, [])
 
-  const fetchRecommendation = useCallback(async () => {
+  const fetchRecommendation = useCallback(async (currentProfile) => {
+    // Prevent multiple simultaneous requests
+    if (loading) {
+      return
+    }
+
     if (offline) {
       setError('You are offline. Connect to the internet and try again.')
       return
@@ -104,29 +115,66 @@ function HomePage() {
     setError('')
 
     try {
+      // Ensure age is a number
+      const sanitizedProfile = {
+        ...currentProfile,
+        age: Number(currentProfile.age) || currentProfile.age,
+      }
+      
       const response = await axios.post(
         'http://localhost:5001/api/recommend',
-        profile,
+        sanitizedProfile,
         { signal: controller.signal, withCredentials: true },
       )
       setRecommendation(response.data)
       cacheRecommendation(response.data)
       setError('')
       addToast('success', 'Recommendations loaded')
-      window.sessionStorage.setItem('policyMateProfile', JSON.stringify(profile))
+      window.sessionStorage.setItem('policyMateProfile', JSON.stringify(sanitizedProfile))
       window.scrollTo({ top: 680, behavior: 'smooth' })
     } catch (err) {
+      // Clear abort controller reference
+      abortRef.current = null
+      
       if (axios.isCancel(err)) {
+        setLoading(false)
         return
       }
-      setError('Failed to load recommendations. Retrying...')
-      addToast('error', 'Failed to load recommendations. Retrying...')
-      setTimeout(fetchRecommendation, 1000)
+      
+      // Handle HTTP errors - do NOT retry automatically
+      if (err.response) {
+        const errorData = err.response.data
+        let msg = 'Failed to load recommendations.'
+        
+        if (err.response.status === 400 && errorData?.errors) {
+          msg = Object.values(errorData.errors).join(', ')
+        } else if (errorData?.error) {
+          msg = errorData.error
+          
+          // Add specific actions based on error type
+          if (errorData.type === 'no_policies_error') {
+            msg += ' Please contact your administrator to upload policy documents.'
+          } else if (errorData.type === 'ai_service_error') {
+            msg += ' The AI service is temporarily unavailable.'
+          } else if (errorData.type === 'validation_error') {
+            msg = errorData.error
+          }
+        }
+        
+        setError(msg)
+        addToast('error', msg)
+        setLoading(false)
+        return
+      }
+
+      // Network error (no response) - do NOT retry automatically
+      setError('Network error. Check your connection and try again.')
+      addToast('error', 'Network error. Check your connection and try again.')
     } finally {
       setLoading(false)
-      abortRef.current = null
     }
-  }, [cacheRecommendation, offline, profile, readCachedRecommendation, addToast])
+    // eslint-disable-next-line no-unused-vars
+  }, [cacheRecommendation, offline, readCachedRecommendation, addToast, loading])
 
   const handleSubmit = useCallback(
     (nextProfile) => {
@@ -136,7 +184,7 @@ function HomePage() {
         window.clearTimeout(debounceRef.current)
       }
       debounceRef.current = window.setTimeout(() => {
-        fetchRecommendation()
+        fetchRecommendation(nextProfile)
       }, 300)
     },
     [fetchRecommendation],

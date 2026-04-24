@@ -45,8 +45,25 @@ export function ChatExplainer({ isOpen, onToggle, profile, recommendation, disab
       setMessages((current) => [...current, { role: 'assistant', text: response.data.reply || 'I could not find that answer in the policy documents.' }])
     } catch (err) {
       console.error(err)
-      setError('Unable to answer right now. Please try again.')
-      setMessages((current) => [...current, { role: 'assistant', text: 'Unable to answer right now. Please try again.' }])
+      let errorMessage = 'Unable to answer right now. Please try again.'
+      
+      if (err.response?.data?.error) {
+        errorMessage = err.response.data.error
+        
+        // Add specific guidance based on error type
+        if (err.response.data.type === 'context_error') {
+          errorMessage = 'Please complete your profile first to get personalized answers.'
+        } else if (err.response.data.type === 'policy_not_found') {
+          errorMessage = 'Please get a new recommendation first to chat about policies.'
+        } else if (err.response.data.type === 'ai_service_error') {
+          errorMessage = 'Chat service temporarily unavailable. Please try again in a moment.'
+        } else if (err.response.data.type === 'network_error') {
+          errorMessage = 'Connection issue. Please check your internet and try again.'
+        }
+      }
+      
+      setError(errorMessage)
+      setMessages((current) => [...current, { role: 'assistant', text: errorMessage }])
     } finally {
       setTyping(false)
     }

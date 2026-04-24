@@ -17,6 +17,11 @@ function AdminPanel() {
   const [success, setSuccess] = useState('')
   const fileInputRef = useRef(null)
 
+  // Edit and Delete states
+  const [editDocId, setEditDocId] = useState(null)
+  const [editForm, setEditForm] = useState({ policyName: '', insurer: '' })
+  const [deleteTarget, setDeleteTarget] = useState(null)
+
   const fetchDocuments = useCallback(async () => {
     setLoadingDocs(true)
     setError('')
@@ -82,29 +87,32 @@ function AdminPanel() {
     }
   }, [file, meta, fetchDocuments])
 
-  const handleUpdate = useCallback(async (id, field, value) => {
+  const saveEdit = useCallback(async (id) => {
     setError('')
     try {
-      await axios.put(`http://localhost:5001/api/admin/docs/${id}`, { [field]: value }, { withCredentials: true })
+      await axios.put(`http://localhost:5001/api/admin/docs/${id}`, editForm, { withCredentials: true })
       fetchDocuments()
       setSuccess('Policy metadata updated')
+      setEditDocId(null)
       setTimeout(() => setSuccess(''), 2500)
     } catch (err) {
       setError('Update failed.')
     }
-  }, [fetchDocuments])
+  }, [editForm, fetchDocuments])
 
-  const handleDelete = useCallback(async (id) => {
+  const confirmDelete = useCallback(async () => {
+    if (!deleteTarget) return
     setError('')
     try {
-      await axios.delete(`http://localhost:5001/api/admin/docs/${id}`, { withCredentials: true })
+      await axios.delete(`http://localhost:5001/api/admin/docs/${deleteTarget.id}`, { withCredentials: true })
       setSuccess('Policy document deleted')
+      setDeleteTarget(null)
       fetchDocuments()
       setTimeout(() => setSuccess(''), 2500)
     } catch (err) {
       setError('Delete request failed.')
     }
-  }, [fetchDocuments])
+  }, [deleteTarget, fetchDocuments])
 
   const documentCount = useMemo(() => documents.length, [documents])
 
@@ -199,25 +207,27 @@ function AdminPanel() {
                 </div>
                 <div>
                   <label className="mb-2 block text-sm font-semibold" htmlFor="policyName">
-                    Policy name
+                    Policy name <span className="text-xs font-normal text-slate-500">(Optional - can edit later)</span>
                   </label>
                   <input
                     id="policyName"
                     value={meta.policyName}
                     onChange={(event) => setMeta((prev) => ({ ...prev, policyName: event.target.value }))}
                     className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 focus:border-[var(--color-primary)] focus:ring focus:ring-blue-200"
+                    placeholder="e.g. Ergo Easy"
                     aria-label="Policy name"
                   />
                 </div>
                 <div>
                   <label className="mb-2 block text-sm font-semibold" htmlFor="insurer">
-                    Insurer
+                    Insurer <span className="text-xs font-normal text-slate-500">(Optional - can edit later)</span>
                   </label>
                   <input
                     id="insurer"
                     value={meta.insurer}
                     onChange={(event) => setMeta((prev) => ({ ...prev, insurer: event.target.value }))}
                     className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 focus:border-[var(--color-primary)] focus:ring focus:ring-blue-200"
+                    placeholder="e.g. HDFC"
                     aria-label="Insurer name"
                   />
                 </div>
@@ -239,40 +249,116 @@ function AdminPanel() {
               <div className="mt-4 space-y-4">
                 {loadingDocs ? (
                   <p className="text-sm text-[var(--color-muted)]">Loading documents…</p>
+                ) : documents.length === 0 ? (
+                  <p className="text-sm text-[var(--color-muted)]">No documents uploaded yet.</p>
                 ) : (
-                  <div className="space-y-3">
-                    {documents.map((doc) => (
-                      <div key={doc.id} className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
-                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                          <div>
-                            <p className="font-semibold">{doc.policyName}</p>
-                            <p className="text-sm text-[var(--color-muted)]">{doc.insurer}</p>
-                          </div>
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleUpdate(doc.id, 'policyName', prompt('Policy name', doc.policyName) || doc.policyName)}
-                              className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-xs font-semibold transition hover:bg-[var(--color-primary-soft)]"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(doc.id)}
-                              className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-xs font-semibold text-[var(--color-error)] transition hover:bg-[var(--color-error)/10]"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                        <p className="mt-2 text-xs text-[var(--color-muted)]">Uploaded {new Date(doc.uploadDate).toLocaleDateString()}</p>
-                      </div>
-                    ))}
+                  <div className="overflow-x-auto rounded-2xl border border-[var(--color-border)]">
+                    <table className="w-full text-left text-sm">
+                      <thead className="bg-[var(--color-background)] text-[var(--color-muted)]">
+                        <tr>
+                          <th className="px-4 py-3 font-semibold">File Name</th>
+                          <th className="px-4 py-3 font-semibold">Upload Date</th>
+                          <th className="px-4 py-3 font-semibold">File Type</th>
+                          <th className="px-4 py-3 font-semibold">Policy Name</th>
+                          <th className="px-4 py-3 font-semibold">Insurer</th>
+                          <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[var(--color-border)]">
+                        {documents.map((doc) => {
+                          const isEditing = editDocId === doc.id
+                          return (
+                            <tr key={doc.id} className="transition hover:bg-[var(--color-background)/50]">
+                              <td className="px-4 py-3 font-mono text-xs">{doc.filename || 'Unknown'}</td>
+                              <td className="px-4 py-3">{doc.uploadDate ? new Date(doc.uploadDate).toISOString().split('T')[0] : 'N/A'}</td>
+                              <td className="px-4 py-3">
+                                <span className="rounded bg-slate-100 px-2 py-1 text-xs font-semibold uppercase text-slate-600">
+                                  {doc.sourceType || 'PDF'}
+                               </span>
+                              </td>
+                              <td className="px-4 py-3">
+                                {isEditing ? (
+                                  <input
+                                    value={editForm.policyName}
+                                    onChange={(e) => setEditForm({ ...editForm, policyName: e.target.value })}
+                                    className="w-full rounded border px-2 py-1 text-sm"
+                                  />
+                                ) : (
+                                  <span className="font-semibold">{doc.policyName}</span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3">
+                                {isEditing ? (
+                                  <input
+                                    value={editForm.insurer}
+                                    onChange={(e) => setEditForm({ ...editForm, insurer: e.target.value })}
+                                    className="w-full rounded border px-2 py-1 text-sm"
+                                  />
+                                ) : (
+                                  <span>{doc.insurer}</span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <div className="flex justify-end gap-2">
+                                  {isEditing ? (
+                                    <>
+                                      <button onClick={() => saveEdit(doc.id)} className="rounded bg-[var(--color-primary)] px-2 py-1 text-xs text-white hover:bg-blue-600">Save</button>
+                                      <button onClick={() => setEditDocId(null)} className="rounded bg-slate-200 px-2 py-1 text-xs hover:bg-slate-300">Cancel</button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      {doc.filename && doc.filename !== 'Unknown' && (
+                                        <a
+                                          href={`http://localhost:5001/sample-policies/${doc.filename}`}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="text-[var(--color-accent)] hover:underline"
+                                        >
+                                          View
+                                        </a>
+                                      )}
+                                      <button onClick={() => { setEditDocId(doc.id); setEditForm({ policyName: doc.policyName, insurer: doc.insurer }) }} className="text-[var(--color-primary)] hover:underline">Edit</button>
+                                      <button onClick={() => setDeleteTarget(doc)} className="text-[var(--color-error)] hover:underline">Delete</button>
+                                    </>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>
             </div>
           </section>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <h3 className="text-lg font-bold text-slate-900">Confirm Deletion</h3>
+            <p className="mt-2 text-sm text-slate-600">
+              Are you sure you want to delete <strong>{deleteTarget.policyName}</strong>? This will permanently remove the policy and its vector embeddings from the system.
+            </p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+              >
+                Confirm Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

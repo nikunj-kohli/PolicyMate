@@ -12,16 +12,10 @@ function LandingPage() {
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
-            to="/app"
+            to="/login"
             className="rounded-full bg-[var(--color-primary)] px-8 py-4 text-lg font-semibold text-white shadow-lg transition hover:scale-105 hover:shadow-xl"
           >
-            I need insurance
-          </Link>
-          <Link
-            to="/admin"
-            className="rounded-full border-2 border-[var(--color-border)] bg-[var(--color-surface)] px-8 py-4 text-lg font-semibold transition hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-soft)] hover:text-[var(--color-primary)]"
-          >
-            Admin Login
+            Get Started
           </Link>
         </div>
       </section>
